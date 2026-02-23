@@ -20,13 +20,15 @@ def identify_platform(url: str) -> dict:
             'name': '微信公众号',
             'domains': ['mp.weixin.qq.com'],
             'strategy': 'browser',
-            'script': 'wechat_reader.py'
+            'script': 'wechat_reader.py',
+            'need_login': True
         },
         'xiaohongshu': {
             'name': '小红书',
             'domains': ['xiaohongshu.com', 'xhslink.com', 'www.xiaohongshu.com'],
             'strategy': 'browser',
-            'script': 'xiaohongshu_reader.py'
+            'script': 'xiaohongshu_reader.py',
+            'need_login': True
         },
         'toutiao': {
             'name': '今日头条',
