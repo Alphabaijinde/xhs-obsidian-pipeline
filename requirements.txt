@@ -1,0 +1,4 @@
+requests
+playwright
+firecrawl-py
+xhshow

@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Compile main script
+        run: python -m py_compile scripts/url_reader.py
+
+      - name: Run unit tests
+        run: python -m unittest tests/test_format_rules.py

@@ -11,6 +11,11 @@ ENV/
 # Data
 data/
 
+# Secrets / local config
+.env
+.env.*
+!.env.example
+
 # IDE
 .idea/
 .vscode/
@@ -20,3 +25,7 @@ data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime / test artifacts
+*.log
+.pytest_cache/

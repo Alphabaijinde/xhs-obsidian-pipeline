@@ -1,0 +1,14 @@
+This repository includes work derived from:
+
+- Project: yhslgg-arch/url-reader
+- URL: https://github.com/yhslgg-arch/url-reader
+- Original author: yhslgg and contributors
+- License: MIT
+
+Substantial modifications and new functionality have been added in this fork.
+This fork uses a dual-license model for fork-owned changes:
+
+- AGPL-3.0-or-later, or
+- Commercial license (see `COMMERCIAL_LICENSE.md`)
+
+See `THIRD_PARTY_LICENSES.md` for upstream attribution and third-party terms.
