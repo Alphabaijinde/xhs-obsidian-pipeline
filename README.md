@@ -75,6 +75,46 @@ export URL_READER_OUTPUT_DIR="/你的Obsidian/🌐 网络收藏"
 ./.venv/bin/python scripts/url_reader.py export-xhs-proof
 ```
 
+## 聊天桥接（微信/飞书）+ OpenCode 免费智能
+
+> 不强制做 OpenClaw skill 插件。可直接在仓库内跑桥接服务，把聊天消息里的链接自动转成笔记。
+
+### 1) 启动桥接服务
+
+```bash
+# 可选：桥接鉴权 token
+export BRIDGE_TOKEN="your-bridge-token"
+
+# 可选：指定 OpenCode 免费模型（默认已是 minimax free）
+export OPENCODE_MODEL="opencode/minimax-m2.5-free"
+
+./.venv/bin/python scripts/chat_bridge.py serve --host 127.0.0.1 --port 8765
+```
+
+### 2) 发送聊天消息到桥接端点
+
+```bash
+curl -X POST http://127.0.0.1:8765/ingest \
+  -H 'Content-Type: application/json' \
+  -H 'x-bridge-token: your-bridge-token' \
+  -d '{
+    "source": "feishu",
+    "sender": "boss",
+    "text": "这个链接帮我沉淀成笔记 https://www.xiaohongshu.com/explore/xxxx"
+  }'
+```
+
+桥接行为：
+- 自动抽取消息里的 URL
+- 用 OpenCode 免费模型做轻量“是否入库/标签建议”
+- 调用现有 url_reader 流程落盘到 Obsidian
+
+### 3) 本地快速调试（不走 HTTP）
+
+```bash
+./.venv/bin/python scripts/chat_bridge.py ingest "帮我存这个 https://www.xiaohongshu.com/explore/xxxx" --source cli
+```
+
 ## 输出效果（结构）
 
 每条小红书链接会生成一个独立目录：

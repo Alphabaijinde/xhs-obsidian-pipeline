@@ -42,6 +42,9 @@ playwright install chromium
 - `FIRECRAWL_API_KEY`：可选，非小红书站点增强读取
 - `URL_READER_OUTPUT_DIR`：可选，覆盖默认 Obsidian 输出目录
 - `URL_READER_LICENSE_MODE`：可选，`commercial` 时会在生成笔记中写入商业标记
+- `BRIDGE_TOKEN`：可选，`scripts/chat_bridge.py` 的 HTTP 鉴权 token
+- `OPENCODE_MODEL`：可选，聊天桥接智能路由模型（默认：`opencode/minimax-m2.5-free`）
+- `OPENCODE_BIN`：可选，OpenCode 可执行路径（默认：`opencode`）
 
 ## 小红书标准流程（固定）
 
@@ -66,6 +69,48 @@ playwright install chromium
 
 ```bash
 ./.venv/bin/python scripts/url_reader.py batch links.txt --retry 1
+```
+
+## 聊天桥接（飞书/微信等）
+
+新增：`scripts/chat_bridge.py` + `scripts/ai_enricher.py`
+
+用途：
+- 接收聊天消息（含 URL）
+- 通过 OpenCode 免费模型做轻量“入库意图 + 标签建议”
+- 调用现有读取与保存流程，直接落地 Obsidian
+
+### 启动桥接服务
+
+```bash
+export BRIDGE_TOKEN="your-bridge-token"  # 可选
+export OPENCODE_MODEL="opencode/minimax-m2.5-free"  # 可选
+
+./.venv/bin/python scripts/chat_bridge.py serve --host 127.0.0.1 --port 8765
+```
+
+### HTTP 接口
+
+- `GET /health`：健康检查
+- `POST /ingest`：消息入库
+
+请求示例：
+
+```bash
+curl -X POST http://127.0.0.1:8765/ingest \
+  -H 'Content-Type: application/json' \
+  -H 'x-bridge-token: your-bridge-token' \
+  -d '{
+    "source": "feishu",
+    "sender": "boss",
+    "text": "帮我存这个链接 https://www.xiaohongshu.com/explore/xxxx"
+  }'
+```
+
+### CLI 直调
+
+```bash
+./.venv/bin/python scripts/chat_bridge.py ingest "帮我存这个链接 https://www.xiaohongshu.com/explore/xxxx" --source cli
 ```
 
 ## 输出规范（已固化）
@@ -174,13 +219,14 @@ CSV 包含：
 ## 开发与测试
 
 ```bash
-python3 -m py_compile scripts/url_reader.py
-./.venv/bin/python -m unittest tests/test_format_rules.py
+python3 -m py_compile scripts/url_reader.py scripts/ai_enricher.py scripts/chat_bridge.py
+./.venv/bin/python -m unittest tests/test_format_rules.py tests/test_chat_bridge.py
 ```
 
-CI（GitHub Actions）会运行：
+CI（GitHub Actions）建议至少运行：
 - `py_compile`
 - `tests/test_format_rules.py`
+- `tests/test_chat_bridge.py`
 
 ## 开发调试脚本（非正式入口）
 
