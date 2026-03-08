@@ -94,6 +94,29 @@ export OPENCODE_MODEL="opencode/minimax-m2.5-free"  # 可选
 - `GET /health`：健康检查
 - `POST /ingest`：消息入库
 
+### 来源监听器（微信MVP优先）
+
+新增：`scripts/inbound_listener.py`
+
+```bash
+# 微信监听MVP（可跑最小闭环）
+./.venv/bin/python scripts/inbound_listener.py --source wechat --host 127.0.0.1 --port 8877
+
+# 飞书监听（第二阶段）
+./.venv/bin/python scripts/inbound_listener.py --source feishu --host 127.0.0.1 --port 8878
+```
+
+接口：
+- `GET /health`
+- `POST /event`
+
+`/event` 支持的消息字段（MVP 宽松兼容）：
+- 文本：`text` / `content` / `msg` / `message`
+- 发送者：`sender` / `from` / `user` / `user_name`
+- 会话：`chat_id` / `conversation_id` / `chat`
+
+监听器收到消息后会直接调用 `chat_bridge.ingest_text_message` 完成 URL 提取、AI 路由与落盘。
+
 请求示例：
 
 ```bash

@@ -91,7 +91,28 @@ export OPENCODE_MODEL="opencode/minimax-m2.5-free"
 ./.venv/bin/python scripts/chat_bridge.py serve --host 127.0.0.1 --port 8765
 ```
 
-### 2) 发送聊天消息到桥接端点
+### 2) （可选）启动来源监听器（微信MVP / 飞书）
+
+```bash
+# 微信监听MVP（最小闭环）
+./.venv/bin/python scripts/inbound_listener.py --source wechat --host 127.0.0.1 --port 8877
+
+# 飞书监听（第二阶段，复用同一监听器）
+./.venv/bin/python scripts/inbound_listener.py --source feishu --host 127.0.0.1 --port 8878
+```
+
+然后把上游消息转成 HTTP POST 到 `/event`：
+
+```bash
+curl -X POST http://127.0.0.1:8877/event \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "text": "这个链接帮我沉淀成笔记 https://www.xiaohongshu.com/explore/xxxx",
+    "sender": "boss"
+  }'
+```
+
+### 3) 发送聊天消息到桥接端点
 
 ```bash
 curl -X POST http://127.0.0.1:8765/ingest \
