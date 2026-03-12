@@ -2,3 +2,6 @@ requests
 playwright
 firecrawl-py
 xhshow
+itchat-uos
+pycryptodome
+zstandard

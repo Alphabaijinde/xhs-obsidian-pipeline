@@ -29,3 +29,4 @@ Thumbs.db
 # Runtime / test artifacts
 *.log
 .pytest_cache/
+QR.png
