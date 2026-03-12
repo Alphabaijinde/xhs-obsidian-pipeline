@@ -101,6 +101,83 @@ export OPENCODE_MODEL="opencode/minimax-m2.5-free"
 ./.venv/bin/python scripts/inbound_listener.py --source feishu --host 127.0.0.1 --port 8878
 ```
 
+### 2.1) 微信个人号直连（文件传输助手）
+
+如果你要直接监听个人微信消息（如「文件传输助手」），可启动 UOS 桥接器，把微信文本消息自动转发到 `/event`：
+
+```bash
+# 终端 A：先启动来源监听器
+./.venv/bin/python scripts/inbound_listener.py --source wechat --host 127.0.0.1 --port 8877
+
+# 终端 B：启动微信桥接（默认仅转发 filehelper）
+./.venv/bin/python scripts/wechat_uos_bridge.py \
+  --event-url http://127.0.0.1:8877/event \
+  --listen-mode filehelper \
+  --cmd-qr
+```
+
+说明：
+- `--listen-mode filehelper`：只转发文件传输助手会话
+- `--listen-mode all`：转发所有文本会话（群/私聊）
+- 若配置了 `LISTENER_TOKEN`，桥接器会自动带 `x-listener-token`
+- `--max-retries`：转发失败时重试次数（默认 2）
+- `--max-login-retries`：登录异常重试次数（默认 `-1`，持续重试）
+
+如果 UOS 登录反复出现“确认后超时”，可切换数据库监听桥接（不走 Web 登录）：
+
+```bash
+# 1) 准备密钥（需要 sudo，一次性）
+cd /tmp/wechat-decrypt-mac
+source /Users/baijinde/code/url-reader/.venv/bin/activate
+sudo /Users/baijinde/code/url-reader/.venv/bin/python find_all_keys.py
+
+# 2) 启动来源监听器
+cd /Users/baijinde/code/url-reader
+./.venv/bin/python scripts/inbound_listener.py --source wechat --host 127.0.0.1 --port 8877
+
+# 3) 启动数据库桥接（只转发文件传输助手）
+./.venv/bin/python scripts/wechat_db_bridge.py \
+  --monitor-script /tmp/wechat-decrypt-mac/monitor.py \
+  --event-url http://127.0.0.1:8877/event
+```
+
+### 2.2) 微信网关转发（推荐兜底）
+
+新增：`scripts/wechat_gateway_bridge.py`
+
+用途：把第三方微信网关回调（如 Gewechat/Gewechaty）统一转换后转发到 `POST /event`。
+
+```bash
+# 终端 A：来源监听器
+./.venv/bin/python scripts/inbound_listener.py --source wechat --host 127.0.0.1 --port 8877
+
+# 终端 B：网关回调桥接（默认只转发 filehelper）
+./.venv/bin/python scripts/wechat_gateway_bridge.py \
+  --host 127.0.0.1 \
+  --port 8899 \
+  --route /wechat/callback \
+  --target-url http://127.0.0.1:8877/event \
+  --listen-mode filehelper
+```
+
+把你的微信网关回调 URL 配置为：
+- `http://127.0.0.1:8899/wechat/callback`
+
+可用脚本自动设置 GeWe 回调（需要 GeWe 后台 token）：
+
+```bash
+export GEWE_TOKEN='你的_gewe_token'
+./.venv/bin/python scripts/gewe_set_callback.py \
+  --base-api http://api.geweapi.com/gewe/v2/api \
+  --callback-url http://127.0.0.1:8899/wechat/callback
+```
+
+说明：
+- `--listen-mode filehelper`：只收文件传输助手
+- `--listen-mode all`：收所有会话
+- `--timeout`：转发到 `/event` 的超时（默认 120 秒）
+- `--gateway-token`：要求网关携带 `x-gateway-token`/`token`（建议开启）
+
 然后把上游消息转成 HTTP POST 到 `/event`：
 
 ```bash

@@ -117,6 +117,84 @@ export OPENCODE_MODEL="opencode/minimax-m2.5-free"  # 可选
 
 监听器收到消息后会直接调用 `chat_bridge.ingest_text_message` 完成 URL 提取、AI 路由与落盘。
 
+### 微信个人号桥接（文件传输助手）
+
+新增：`scripts/wechat_uos_bridge.py`
+
+用途：通过 `itchat-uos` 监听微信文本消息，并转发到 `POST /event`。
+
+```bash
+# 终端 A
+./.venv/bin/python scripts/inbound_listener.py --source wechat --host 127.0.0.1 --port 8877
+
+# 终端 B
+./.venv/bin/python scripts/wechat_uos_bridge.py \
+  --event-url http://127.0.0.1:8877/event \
+  --listen-mode filehelper \
+  --cmd-qr
+```
+
+参数：
+- `--listen-mode filehelper`：仅转发文件传输助手
+- `--listen-mode all`：转发所有文本会话
+- `--listener-token`：可覆盖 `LISTENER_TOKEN`
+- `--max-retries`：转发失败时的重试次数（默认 2）
+- `--max-login-retries`：登录异常重试次数（默认 `-1`，持续重试）
+
+### 微信数据库桥接（UOS 登录受限时）
+
+新增：`scripts/wechat_db_bridge.py`
+
+用途：对接 `wechat-decrypt-mac` 的 `monitor.py` 输出，将文件传输助手文本消息转发到 `POST /event`。
+
+```bash
+# 一次性提取密钥（需要 sudo）
+cd /tmp/wechat-decrypt-mac
+source /Users/baijinde/code/url-reader/.venv/bin/activate
+sudo /Users/baijinde/code/url-reader/.venv/bin/python find_all_keys.py
+
+# 启动监听器 + 数据库桥接
+cd /Users/baijinde/code/url-reader
+./.venv/bin/python scripts/inbound_listener.py --source wechat --host 127.0.0.1 --port 8877
+./.venv/bin/python scripts/wechat_db_bridge.py --monitor-script /tmp/wechat-decrypt-mac/monitor.py --event-url http://127.0.0.1:8877/event
+```
+
+### 微信网关回调桥接（推荐兜底）
+
+新增：`scripts/wechat_gateway_bridge.py`
+
+用途：接收第三方微信网关回调并转发到 `POST /event`。
+
+```bash
+# 终端 A
+./.venv/bin/python scripts/inbound_listener.py --source wechat --host 127.0.0.1 --port 8877
+
+# 终端 B
+./.venv/bin/python scripts/wechat_gateway_bridge.py \
+  --host 127.0.0.1 \
+  --port 8899 \
+  --route /wechat/callback \
+  --target-url http://127.0.0.1:8877/event \
+  --listen-mode filehelper
+```
+
+网关侧回调 URL 配置：
+- `http://127.0.0.1:8899/wechat/callback`
+
+可选：脚本自动设置 GeWe 回调地址（`scripts/gewe_set_callback.py`）
+
+```bash
+export GEWE_TOKEN='你的_gewe_token'
+./.venv/bin/python scripts/gewe_set_callback.py \
+  --base-api http://api.geweapi.com/gewe/v2/api \
+  --callback-url http://127.0.0.1:8899/wechat/callback
+```
+
+参数：
+- `--listen-mode filehelper|all`
+- `--timeout`：上游 `/event` 超时（默认 120 秒）
+- `--gateway-token`：网关回调鉴权（header `x-gateway-token` 或 body `token`）
+
 请求示例：
 
 ```bash
